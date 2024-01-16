@@ -1,5 +1,9 @@
 # Cool-Note-Taker
 
+## Deployed Link
+
+https://thawing-everglades-34679-07fa08a63924.herokuapp.com/notes
+
 ## Description
 
 The Note Taker application was developed with the primary motivation of providing a simple and intuitive platform for users, particularly small business owners, to write, save, and organize notes. This application addresses the need for a straightforward and accessible tool to keep track of tasks and ideas. Through the development process, I learned about the intricacies of setting up a full-stack application, including front-end JavaScript, Express.js back-end, and handling JSON data.
