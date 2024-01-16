@@ -3,52 +3,75 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = 3001; 
+
+const generateId = () => `${Date.now()}`;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// HTML Routes
-app.get('/notes', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'notes.html'));
-});
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, '/public/index.html'))
+);
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/notes', (req, res) =>
+  res.sendFile(path.join(__dirname, '/public/notes.html'))
+);
 
-// API Routes
-app.get('/api/notes', (req, res) => {
-  const notes = JSON.parse(fs.readFileSync('db.json', 'utf-8'));
-  res.json(notes);
-});
+app.get('/api/notes', (req, res) =>
+  fs.readFile('./db/db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Error reading notes' });
+    }
+    res.json(JSON.parse(data));
+  })
+);
 
 app.post('/api/notes', (req, res) => {
-  const newNote = req.body;
-  const notes = JSON.parse(fs.readFileSync('db.json', 'utf-8'));
+  const { title, text } = req.body;
 
-  newNote.id = Math.random().toString(36).substr(2, 9);
+  if (!title || !text) {
+    return res.status(400).json({ message: 'Note title and text are required' });
+  }
 
-  notes.push(newNote);
+  const newNote = { title, text, id: generateId() };
 
-  fs.writeFileSync('db.json', JSON.stringify(notes));
+  fs.readFile('./db/db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Error reading notes' });
+    }
+    const notes = JSON.parse(data);
+    notes.push(newNote);
 
-  res.json(newNote);
+    fs.writeFile('./db/db.json', JSON.stringify(notes, null, 4), (writeErr) =>
+      writeErr
+        ? res.status(500).json({ message: 'Error writing note' })
+        : res.json(newNote)
+    );
+  });
 });
 
-// Bonus: DELETE Route
 app.delete('/api/notes/:id', (req, res) => {
   const noteId = req.params.id;
-  let notes = JSON.parse(fs.readFileSync('db.json', 'utf-8'));
 
-  notes = notes.filter((note) => note.id !== noteId);
+  fs.readFile('./db/db.json', 'utf8', (err, data) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: 'Error reading notes' });
+    }
+    const notes = JSON.parse(data).filter((note) => note.id !== noteId);
 
-  fs.writeFileSync('db.json', JSON.stringify(notes));
-
-  res.json({ success: true });
+    fs.writeFile('./db/db.json', JSON.stringify(notes, null, 4), (writeErr) =>
+      writeErr
+        ? res.status(500).json({ message: 'Error deleting note' })
+        : res.json({ message: 'Note deleted successfully' })
+    );
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+app.listen(PORT, () =>
+  console.log(`Note Taker server is listening on port ${PORT}`)
+);
